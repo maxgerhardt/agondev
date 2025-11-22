@@ -27,6 +27,15 @@ jobs:
             mingw-w64-x86_64-python-pip
             git
             zip
+            make
+            cmake
+            texinfo
+            ninja
+            libgmp-devel
+            mpfr-devel
+            bison
+            flex
+            yacc 
 
       - name: Add MINGW64 Python to PATH
         # By default, python from MINGW might not be in Path; we add it
