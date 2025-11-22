@@ -57,10 +57,10 @@ jobs:
           mkdir -p ziprelease
 
           # Copy hexload-send.exe (adjust path if needed)
-          cp -r dist/* ziprelease/
+          cp -r dist/* ziprelease/ || true
 
           # Copy LLVM build outputs
-          cp -r llvm-build/ez80-none-elf/* ziprelease/
+          cp -r llvm-build/ez80-none-elf/* ziprelease/ || true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v5
