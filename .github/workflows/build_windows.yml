@@ -39,6 +39,7 @@ jobs:
             zlib-devel
             diffutils
             mingw-w64-x86_64-gcc
+            binutils
 
       - name: Add MINGW64 Python to PATH
         # By default, python from MINGW might not be in Path; we add it
@@ -64,6 +65,11 @@ jobs:
 
           # Copy LLVM build outputs
           cp -r llvm-build/ez80-none-elf/* ziprelease/ || true
+
+      - name: Strip binaries
+        run: |
+          echo "Stripping binaries..."
+          find ziprelease -type f \( -iname "*.exe" -o -iname "*.dll" \) -print -exec strip --strip-unneeded {} \;
 
       - name: Upload artifact
         uses: actions/upload-artifact@v5
