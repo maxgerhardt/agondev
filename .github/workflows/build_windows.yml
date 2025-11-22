@@ -21,7 +21,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
-          update: true
+          update: false
           install: |
             mingw-w64-x86_64-python
             mingw-w64-x86_64-python-pip
@@ -35,7 +35,7 @@ jobs:
             mpfr-devel
             bison
             flex
-            mingw-w64-python-ply 
+            mingw-w64-x86_64-python-ply 
 
       - name: Add MINGW64 Python to PATH
         # By default, python from MINGW might not be in Path; we add it
