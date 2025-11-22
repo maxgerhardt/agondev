@@ -47,7 +47,7 @@ jobs:
         cmake --build . --config Release --target INSTALL -- /maxcpucount
 
     - name: Upload LLVM artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v5
       with:
         name: llvm-ez80-msvc
         path: ${{ env.INSTALL_DIR }}
