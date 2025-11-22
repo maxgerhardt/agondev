@@ -42,10 +42,11 @@ jobs:
               -DCMAKE_INSTALL_PREFIX=$env:INSTALL_DIR `
               ../llvm-project/llvm
 
-    - name: Build and install LLVM
+    - name: Build LLVM
+      shell: pwsh
       run: |
-        cd $BUILD_DIR
-        cmake --build . --config Release --target INSTALL -- /maxcpucount
+          cd $env:BUILD_DIR
+          cmake --build . --config Release --target INSTALL -- /maxcpucount
 
     - name: Upload LLVM artifact
       uses: actions/upload-artifact@v5
