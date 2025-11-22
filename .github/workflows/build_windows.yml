@@ -51,14 +51,19 @@ jobs:
         run: |
           ./make_llvmtools.sh
 
-      - name: Prepare release zip
+      - name: Prepare clean release folder
         run: |
-          cd dist
-          # Create a zip of everything in dist; adjust name as needed
-          zip -r agondev-${{ github.ref_name }}.zip .
+          rm -rf ziprelease
+          mkdir -p ziprelease
+
+          # Copy hexload-send.exe (adjust path if needed)
+          cp -r dist/* ziprelease/
+
+          # Copy LLVM build outputs
+          cp -r llvm-build/ez80-none-elf/* ziprelease/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
           name: agondev-${{ github.ref_name }}
-          path: dist/agondev-${{ github.ref_name }}.zip
+          path: ziprelease/*
