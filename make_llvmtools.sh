@@ -1,7 +1,7 @@
 #!/bin/bash
 
-BUILD_LLVM=yes
-BUILD_BINUTILS=yes
+BUILD_LLVM=no
+BUILD_BINUTILS=no
 BUILD_HEXLOADSEND=yes
 
 # Immediately stop on any error

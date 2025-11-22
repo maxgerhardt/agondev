@@ -1,0 +1,55 @@
+name: Build AgibDev
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    # Use msys2 as default shell so that run steps run in MSYS2 shell
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Setup MSYS2 (MINGW64)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: |
+            mingw-w64-x86_64-python
+            mingw-w64-x86_64-python-pip
+            git
+            zip
+
+      - name: Add MINGW64 Python to PATH
+        # By default, python from MINGW might not be in Path; we add it
+        run: |
+          echo "${{ steps.setup-msys2.outputs.msys2-location }}/mingw64/bin" >> "$GITHUB_PATH"
+
+      - name: Verify Python
+        run: |
+          python --version
+          pip --version
+
+      - name: Run make_llvmtools.sh
+        run: |
+          ./make_llvmtools.sh
+
+      - name: Prepare release zip
+        run: |
+          cd dist
+          # Create a zip of everything in dist; adjust name as needed
+          zip -r agondev-${{ github.ref_name }}.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: agondev-${{ github.ref_name }}
+          path: dist/agondev-${{ github.ref_name }}.zip
