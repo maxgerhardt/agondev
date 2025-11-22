@@ -31,11 +31,11 @@ jobs:
             cmake
             texinfo
             ninja
-            libgmp-devel
+            gmp-devel
             mpfr-devel
             bison
             flex
-            yacc 
+            mingw-w64-python-ply 
 
       - name: Add MINGW64 Python to PATH
         # By default, python from MINGW might not be in Path; we add it
