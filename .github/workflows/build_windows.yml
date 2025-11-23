@@ -16,11 +16,21 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
 
-      - name: Download LLVM (MSVC) artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: llvm-ez80-msvc
-          path: llvm-build
+      - name: Download LLVM artifact from another workflow run
+        shell: pwsh
+        run: |
+          $Artifact = Invoke-RestMethod `
+            -Headers @{ Authorization = "Bearer $env:GITHUB_TOKEN" } `
+            -Uri "https://api.github.com/repos/${{ github.repository }}/actions/artifacts"
+
+          $Found = $Artifact.artifacts | Where-Object { $_.name -eq "llvm-ez80-msvc" }
+
+          Invoke-WebRequest `
+            -Headers @{ Authorization = "Bearer $env:GITHUB_TOKEN" } `
+            -Uri $Found.archive_download_url `
+            -OutFile "llvm.zip"
+
+          Expand-Archive llvm.zip -DestinationPath llvm-build
 
       - name: Setup MSYS2 (MINGW64)
         uses: msys2/setup-msys2@v2
