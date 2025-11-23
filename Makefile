@@ -51,7 +51,7 @@ all: $(RELEASE_BIN_DIR) $(LIBAGON) agondev-setname agondev-config
 	@echo [ Copying binaries to $(RELEASE_BIN_DIR) ]
 	@cp $(TOOL_DIR)/$(EZ80ARCH)-* $(RELEASE_BIN_DIR)
 	@strip $(RELEASE_BIN_DIR)/$(EZ80ARCH)-*
-	@cp $(TOOL_DIR)/clang $(RELEASE_BIN_DIR)/$(EZ80ARCH)-clang$(if $(findstring .exe,$(wildcard $(TOOL_DIR)/clang*)),.exe,)
+	@cp $(TOOL_DIR)/clang* $(RELEASE_BIN_DIR)/$(EZ80ARCH)-clang$(if $(findstring .exe,$(wildcard $(TOOL_DIR)/clang*)),.exe,)
 	@strip $(RELEASE_BIN_DIR)/$(EZ80ARCH)-clang*
 	@cp ./dist/hexload-send* $(RELEASE_BIN_DIR) 
 	@cp $(AGONDEV_SETNAME)/bin/* $(RELEASE_BIN_DIR)/
