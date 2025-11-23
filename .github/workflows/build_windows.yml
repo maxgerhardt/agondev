@@ -1,14 +1,13 @@
-name: Build AgibDev
+name: Build AgonDev
 
 on:
   push:
   workflow_dispatch:
 
 jobs:
-  build-windows:
+  build-agondev:
     runs-on: windows-latest
 
-    # Use msys2 as default shell so that run steps run in MSYS2 shell
     defaults:
       run:
         shell: msys2 {0}
@@ -16,6 +15,12 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
+
+      - name: Download LLVM (MSVC) artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: llvm-ez80-msvc
+          path: llvm-build
 
       - name: Setup MSYS2 (MINGW64)
         uses: msys2/setup-msys2@v2
@@ -35,14 +40,13 @@ jobs:
             mpfr-devel
             bison
             flex
-            mingw-w64-x86_64-python-ply 
+            mingw-w64-x86_64-python-ply
             zlib-devel
             diffutils
             mingw-w64-x86_64-gcc
             binutils
 
       - name: Add MINGW64 Python to PATH
-        # By default, python from MINGW might not be in Path; we add it
         run: |
           echo "${{ steps.setup-msys2.outputs.msys2-location }}/mingw64/bin" >> "$GITHUB_PATH"
 
@@ -55,24 +59,13 @@ jobs:
         run: |
           ./make_llvmtools.sh
 
-      - name: Prepare clean release folder
+      - name: Build final AgonDev package
         run: |
-          rm -rf ziprelease
-          mkdir -p ziprelease
+          make clean || true
+          make -j$(nproc)
 
-          # Copy hexload-send.exe (adjust path if needed)
-          cp -r dist/* ziprelease/ || true
-
-          # Copy LLVM build outputs
-          cp -r llvm-build/ez80-none-elf/* ziprelease/ || true
-
-      - name: Strip binaries
-        run: |
-          echo "Stripping binaries..."
-          find ziprelease -type f \( -iname "*.exe" -o -iname "*.dll" \) -print -exec strip --strip-unneeded {} \;
-
-      - name: Upload artifact
+      - name: Upload final release artifact
         uses: actions/upload-artifact@v5
         with:
           name: agondev-${{ github.ref_name }}
-          path: ziprelease/*
+          path: release/
