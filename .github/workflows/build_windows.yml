@@ -20,21 +20,38 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
 
-      - name: Download LLVM artifact from another workflow run
+      - name: Download LLVM artifact from another run
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # REQUIRED
         run: |
-          $Artifact = Invoke-RestMethod `
-            -Headers @{ Authorization = "Bearer $env:GITHUB_TOKEN" } `
-            -Uri "https://api.github.com/repos/${{ github.repository }}/actions/artifacts"
+          $Owner = "${{ github.repository_owner }}"
+          $Repo = "${{ github.event.repository.name }}"
+          $RunId = "19610540421"
+          $ArtifactName = "llvm-ez80-msvc"
 
-          $Found = $Artifact.artifacts | Where-Object { $_.name -eq "llvm-ez80-msvc" }
+          $Headers = @{
+            Authorization = "Bearer $env:GH_TOKEN"
+            Accept        = "application/vnd.github+json"
+          }
 
-          Invoke-WebRequest `
-            -Headers @{ Authorization = "Bearer $env:GITHUB_TOKEN" } `
-            -Uri $Found.archive_download_url `
-            -OutFile "llvm.zip"
+          Write-Host "Fetching artifact list..."
+          $ApiUrl = "https://api.github.com/repos/$Owner/$Repo/actions/runs/$RunId/artifacts"
+          $RunInfo = Invoke-RestMethod -Headers $Headers -Uri $ApiUrl -Method GET
 
+          $Artifact = $RunInfo.artifacts | Where-Object { $_.name -eq $ArtifactName }
+
+          if (-not $Artifact) {
+            Write-Error "Artifact '$ArtifactName' not found in run $RunId"
+            exit 1
+          }
+
+          Write-Host "Downloading artifact..."
+          Invoke-RestMethod -Headers $Headers -Uri $Artifact.archive_download_url -Method GET -OutFile "llvm.zip"
+
+          Write-Host "Extracting..."
           Expand-Archive llvm.zip -DestinationPath llvm-build
+
 
       - name: Setup MSYS2 (MINGW64)
         uses: msys2/setup-msys2@v2
