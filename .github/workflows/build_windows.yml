@@ -22,11 +22,6 @@ jobs:
       run: |
         git clone --branch z80-as --depth 1 https://github.com/envenomator/llvm-project.git $env:LLVM_PROJECT_DIR
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
-
     #
     # ---- LLVM Build (MSVC) ----
     #
@@ -91,6 +86,7 @@ jobs:
         pip --version
 
     - name: Run make_llvmtools.sh
+      shell: msys2 {0}
       run: |
         ./make_llvmtools.sh
         cp /mingw64/bin/libintl-8.dll llvm-build/ez80-none-elf/bin/
@@ -99,6 +95,7 @@ jobs:
         cp /mingw64/bin/libiconv-2.dll llvm-build/ez80-none-elf/bin/
 
     - name: Build final AgonDev package
+      shell: msys2 {0}
       run: |
         make clean || true
         make -j$(nproc)
