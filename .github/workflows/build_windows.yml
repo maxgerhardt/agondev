@@ -1,4 +1,4 @@
-name: Build LLVM + Build AgonDev
+name: Build AgonDev (Windows x64)
 
 on:
   push:
@@ -22,10 +22,7 @@ jobs:
       run: |
         git clone --branch z80-as --depth 1 https://github.com/envenomator/llvm-project.git $env:LLVM_PROJECT_DIR
 
-    #
-    # ---- LLVM Build (MSVC) ----
-    #
-    - name: Configure LLVM (Visual Studio)
+    - name: Configure LLVM (Visual Studio + MSVC)
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force -Path $env:BUILD_DIR | Out-Null
@@ -50,9 +47,7 @@ jobs:
         cd $env:BUILD_DIR
         cmake --build . --config Release --target INSTALL -- /maxcpucount
 
-    #
     # ---- AgonDev build (MSYS2 MINGW64) ----
-    #
     - name: Setup MSYS2 (MINGW64)
       uses: msys2/setup-msys2@v2
       with:
@@ -77,18 +72,11 @@ jobs:
           mingw-w64-x86_64-gcc
           binutils
 
-    - name: Add MINGW64 Python to PATH
-      run: echo "${{ steps.setup-msys2.outputs.msys2-location }}/mingw64/bin" >> "$GITHUB_PATH"
-
-    - name: Verify Python
-      run: |
-        python --version
-        pip --version
-
     - name: Run make_llvmtools.sh
       shell: msys2 {0}
       run: |
         ./make_llvmtools.sh
+        # dependencies of MinGW64 built binaries (see ldd ez80-none-elf-objdump.exe for example)
         cp /mingw64/bin/libintl-8.dll llvm-build/ez80-none-elf/bin/
         cp /mingw64/bin/libwinpthread-1.dll llvm-build/ez80-none-elf/bin/
         cp /mingw64/bin/libzstd.dll llvm-build/ez80-none-elf/bin/
@@ -103,5 +91,5 @@ jobs:
     - name: Upload final artifact
       uses: actions/upload-artifact@v5
       with:
-        name: agondev-${{ github.ref_name }}
+        name: agondev-windows-x64
         path: agondev-*.tar.gz
