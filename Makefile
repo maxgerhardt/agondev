@@ -59,6 +59,8 @@ endif
 all: $(RELEASE_BIN_DIR) $(LIBAGON) agondev-setname agondev-config
 	@echo [ Copying binaries to $(RELEASE_BIN_DIR) ]
 	@cp $(TOOL_DIR)/$(EZ80ARCH)-* $(RELEASE_BIN_DIR)
+	@cp $(TOOL_DIR)/lib*.dll $(RELEASE_BIN_DIR)
+	@rm -f $(RELEASE_BIN_DIR)/libclang.dll
 	@strip $(RELEASE_BIN_DIR)/$(EZ80ARCH)-*
 	@cp $(CLANG_SRC) $(CLANG_DEST)
 	@strip $(RELEASE_BIN_DIR)/$(EZ80ARCH)-clang*

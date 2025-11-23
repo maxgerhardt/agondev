@@ -100,6 +100,11 @@ jobs:
       - name: Run make_llvmtools.sh
         run: |
           ./make_llvmtools.sh
+          # need these as dependencies from MinGW64, see ldd ez80-none-elf-objdump.exe and related
+          cp /mingw64/bin/libintl-8.dll llvm-build/ez80-none-elf/bin/
+          cp /mingw64/bin/libwinpthread-1.dll llvm-build/ez80-none-elf/bin/
+          cp /mingw64/bin/libzstd.dll llvm-build/ez80-none-elf/bin/
+          cp /mingw64/bin/libiconv-2.dll llvm-build/ez80-none-elf/bin/
 
       - name: Build final AgonDev package
         run: |
