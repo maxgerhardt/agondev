@@ -1,5 +1,9 @@
 name: Build AgonDev
 
+permissions:
+  actions: read
+  contents: read
+
 on:
   push:
   workflow_dispatch:
