@@ -1,118 +1,110 @@
-name: Build AgonDev
-
-permissions:
-  actions: read
-  contents: read
+name: Build LLVM + Build AgonDev
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
 
 jobs:
-  build-agondev:
-    runs-on: windows-latest
+  build-all:
+    runs-on: windows-2022
 
-    defaults:
-      run:
-        shell: msys2 {0}
+    env:
+      LLVM_PROJECT_DIR: ${{ github.workspace }}/llvm-project
+      BUILD_DIR: ${{ github.workspace }}/build
+      INSTALL_DIR: ${{ github.workspace }}/llvm-build/ez80-none-elf
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
+    - name: Checkout workflow repo
+      uses: actions/checkout@v6
 
-      - name: Download LLVM artifact from another run
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # REQUIRED
-        run: |
-          $Owner = "${{ github.repository_owner }}"
-          $Repo = "${{ github.event.repository.name }}"
-          $RunId = "19610540421"
-          $ArtifactName = "llvm-ez80-msvc"
+    - name: Clone EZ80 LLVM fork
+      run: |
+        git clone --branch z80-as --depth 1 https://github.com/envenomator/llvm-project.git $env:LLVM_PROJECT_DIR
 
-          $Headers = @{
-            Authorization = "Bearer $env:GH_TOKEN"
-            Accept        = "application/vnd.github+json"
-          }
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
 
-          Write-Host "Fetching artifact list..."
-          $ApiUrl = "https://api.github.com/repos/$Owner/$Repo/actions/runs/$RunId/artifacts"
-          $RunInfo = Invoke-RestMethod -Headers $Headers -Uri $ApiUrl -Method GET
+    #
+    # ---- LLVM Build (MSVC) ----
+    #
+    - name: Configure LLVM (Visual Studio)
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path $env:BUILD_DIR | Out-Null
+        New-Item -ItemType Directory -Force -Path $env:INSTALL_DIR | Out-Null
 
-          $Artifact = $RunInfo.artifacts | Where-Object { $_.name -eq $ArtifactName }
+        cd $env:BUILD_DIR
 
-          if (-not $Artifact) {
-            Write-Error "Artifact '$ArtifactName' not found in run $RunId"
-            exit 1
-          }
+        cmake -G "Visual Studio 17 2022" `
+            -A x64 `
+            -Thost=x64 `
+            -DLLVM_ENABLE_PROJECTS=clang `
+            -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=Z80 `
+            -DLLVM_TARGETS_TO_BUILD= `
+            -DLLVM_DEFAULT_TARGET_TRIPLE=ez80-none-elf `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_INSTALL_PREFIX="$env:INSTALL_DIR" `
+            ../llvm-project/llvm
 
-          Write-Host "Downloading artifact..."
-          Invoke-RestMethod -Headers $Headers -Uri $Artifact.archive_download_url -Method GET -OutFile "llvm.zip"
+    - name: Build LLVM
+      shell: pwsh
+      run: |
+        cd $env:BUILD_DIR
+        cmake --build . --config Release --target INSTALL -- /maxcpucount
 
-          Write-Host "Preparing llvm-build structure..."
-          New-Item -ItemType Directory -Force -Path "llvm-build/ez80-none-elf" | Out-Null
+    #
+    # ---- AgonDev build (MSYS2 MINGW64) ----
+    #
+    - name: Setup MSYS2 (MINGW64)
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: false
+        install: |
+          mingw-w64-x86_64-python
+          mingw-w64-x86_64-python-pip
+          git
+          zip
+          make
+          cmake
+          texinfo
+          ninja
+          gmp-devel
+          mpfr-devel
+          bison
+          flex
+          mingw-w64-x86_64-python-ply
+          zlib-devel
+          diffutils
+          mingw-w64-x86_64-gcc
+          binutils
 
-          Write-Host "Extracting..."
-          Expand-Archive "llvm.zip" -DestinationPath "llvm-build/ez80-none-elf" -Force
+    - name: Add MINGW64 Python to PATH
+      run: echo "${{ steps.setup-msys2.outputs.msys2-location }}/mingw64/bin" >> "$GITHUB_PATH"
 
-          Write-Host "==== DEBUG: List extracted structure ===="
-          Write-Host "Top-level:"
-          Get-ChildItem -Recurse -Depth 1 llvm-build
-          
-          Write-Host "ez80-none-elf contents:"
-          Get-ChildItem -Recurse -Depth 2 llvm-build\ez80-none-elf
+    - name: Verify Python
+      run: |
+        python --version
+        pip --version
 
-          Write-Host "==== END DEBUG ===="
+    - name: Run make_llvmtools.sh
+      run: |
+        ./make_llvmtools.sh
+        cp /mingw64/bin/libintl-8.dll llvm-build/ez80-none-elf/bin/
+        cp /mingw64/bin/libwinpthread-1.dll llvm-build/ez80-none-elf/bin/
+        cp /mingw64/bin/libzstd.dll llvm-build/ez80-none-elf/bin/
+        cp /mingw64/bin/libiconv-2.dll llvm-build/ez80-none-elf/bin/
 
-      - name: Setup MSYS2 (MINGW64)
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: false
-          install: |
-            mingw-w64-x86_64-python
-            mingw-w64-x86_64-python-pip
-            git
-            zip
-            make
-            cmake
-            texinfo
-            ninja
-            gmp-devel
-            mpfr-devel
-            bison
-            flex
-            mingw-w64-x86_64-python-ply
-            zlib-devel
-            diffutils
-            mingw-w64-x86_64-gcc
-            binutils
+    - name: Build final AgonDev package
+      run: |
+        make clean || true
+        make -j$(nproc)
 
-      - name: Add MINGW64 Python to PATH
-        run: |
-          echo "${{ steps.setup-msys2.outputs.msys2-location }}/mingw64/bin" >> "$GITHUB_PATH"
-
-      - name: Verify Python
-        run: |
-          python --version
-          pip --version
-
-      - name: Run make_llvmtools.sh
-        run: |
-          ./make_llvmtools.sh
-          # need these as dependencies from MinGW64, see ldd ez80-none-elf-objdump.exe and related
-          cp /mingw64/bin/libintl-8.dll llvm-build/ez80-none-elf/bin/
-          cp /mingw64/bin/libwinpthread-1.dll llvm-build/ez80-none-elf/bin/
-          cp /mingw64/bin/libzstd.dll llvm-build/ez80-none-elf/bin/
-          cp /mingw64/bin/libiconv-2.dll llvm-build/ez80-none-elf/bin/
-
-      - name: Build final AgonDev package
-        run: |
-          make clean || true
-          make -j$(nproc)
-
-      - name: Upload final release artifact
-        uses: actions/upload-artifact@v5
-        with:
-          name: agondev-${{ github.ref_name }}
-          path: agondev-*.tar.gz
+    - name: Upload final artifact
+      uses: actions/upload-artifact@v5
+      with:
+        name: agondev-${{ github.ref_name }}
+        path: agondev-*.tar.gz
