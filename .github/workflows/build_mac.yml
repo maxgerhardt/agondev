@@ -28,11 +28,10 @@ jobs:
       - name: Verify Python
         run: |
           python3 --version
-          pip3 install ply
+          pip3 install --break-system-packages ply
 
       - name: Run make_llvmtools.sh
         run: |
-          chmod +x make_llvmtools.sh
           ./make_llvmtools.sh
 
       - name: Build final AgonDev package
