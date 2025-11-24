@@ -18,8 +18,6 @@ jobs:
 
     - name: Run make_llvmtools.sh
       run: |
-        # Enable LLVM build
-        sed -i 's/^BUILD_LLVM=no$/BUILD_LLVM=yes/' make_llvmtools.sh
         ./make_llvmtools.sh
 
     - name: Build final AgonDev package

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BUILD_LLVM=no
+BUILD_LLVM=yes
 BUILD_BINUTILS=yes
 BUILD_HEXLOADSEND=yes
 

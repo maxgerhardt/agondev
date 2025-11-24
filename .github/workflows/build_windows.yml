@@ -75,6 +75,8 @@ jobs:
     - name: Run make_llvmtools.sh
       shell: msys2 {0}
       run: |
+        # Disable LLVM build, already done in MSVC above
+        sed -i 's/^BUILD_LLVM=yes$/BUILD_LLVM=no/' make_llvmtools.sh
         ./make_llvmtools.sh
         # dependencies of MinGW64 built binaries (see ldd ez80-none-elf-objdump.exe for example)
         cp /mingw64/bin/libintl-8.dll llvm-build/ez80-none-elf/bin/
